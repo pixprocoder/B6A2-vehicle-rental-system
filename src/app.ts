@@ -1,6 +1,7 @@
 import express, { type Request, type Response } from "express";
 import cors from "cors";
 import routes from "./app/routes";
+import bootstrap from "./config/db";
 
 const app = express();
 
@@ -8,12 +9,16 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.use("/api/v1", routes);
+// Initializing DB
+bootstrap();
 
 // root
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello World!");
 });
+
+// application endpoint
+app.use("/api/v1", routes);
 
 // not found
 app.use((req: Request, res: Response) => {
