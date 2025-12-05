@@ -1,15 +1,9 @@
 # b6a2-solution
 
-To install dependencies:
+## tech stack
 
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.0. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+- Node.js + TypeScript
+- Express.js (web framework)
+- PostgreSQL (database)
+- bcrypt (password hashing)
+- jsonwebtoken (JWT authentication)
