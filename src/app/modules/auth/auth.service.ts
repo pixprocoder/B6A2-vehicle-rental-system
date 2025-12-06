@@ -1,5 +1,7 @@
 import bcrypt from "bcryptjs";
 import { pool } from "../../../config/db";
+import config from "../../../config";
+import jwt from "jsonwebtoken";
 
 // Create user
 const createUser = async (payload: Record<string, unknown>) => {
@@ -18,6 +20,44 @@ const createUser = async (payload: Record<string, unknown>) => {
   return result;
 };
 
+// login
+const loginUser = async (payload: Record<string, unknown>) => {
+  const { email, password } = payload;
+  const result = await pool.query(`SELECT * FROM users WHERE email=$1`, [
+    email,
+  ]);
+
+  if (result.rows.length === 0) {
+    const error: any = new Error("User not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const user = result.rows[0];
+
+  const isPasswordMatch = await bcrypt.compare(
+    password as string,
+    user.password
+  );
+
+  if (!isPasswordMatch) {
+    const error: any = new Error("Invalid password");
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const token = jwt.sign(
+    { name: user.name, email: user.email, role: user.role },
+    config.jwt_secret as string,
+    {
+      expiresIn: "7d",
+    }
+  );
+
+  return { token, user };
+};
+
 export const authServices = {
   createUser,
+  loginUser,
 };
