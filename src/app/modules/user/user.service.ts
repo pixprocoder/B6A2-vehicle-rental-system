@@ -7,6 +7,7 @@ const getUsers = async () => {
   return result;
 };
 
+// update user
 const updateUser = async (
   paramsUserId: string,
   currentUser: Record<string, undefined>,
@@ -45,7 +46,28 @@ const updateUser = async (
   return result.rows[0];
 };
 
+// delete user
+const deleteUser = async (paramsUserId: string) => {
+  const checkActiveBooking = await pool.query(
+    `
+    SELECT id FROM bookings WHERE customer_id = $1 AND status = "active"
+    `,
+    [paramsUserId]
+  );
+
+  if (checkActiveBooking.rows.length > 0) {
+    throw new Error("Cannot delete user with active bookings");
+  }
+
+  const result = await pool.query(`DELETE FROM users WHERE id = $1 `, [
+    paramsUserId,
+  ]);
+
+  return result.rows[0];
+};
+
 export const userServices = {
   getUsers,
   updateUser,
+  deleteUser,
 };

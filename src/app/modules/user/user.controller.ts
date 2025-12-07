@@ -22,12 +22,12 @@ const getUsers = async (req: Request, res: Response) => {
 
 const updateUser = async (req: Request, res: Response) => {
   try {
-    const targetedUserId = req.params.userId;
+    const paramsUserId = req.params.userId;
     const currentUser = req.user;
     const updateData = req.body;
 
     const result = await userServices.updateUser(
-      targetedUserId!,
+      paramsUserId!,
       currentUser!,
       updateData
     );
@@ -45,7 +45,27 @@ const updateUser = async (req: Request, res: Response) => {
   }
 };
 
+const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const paramsUserId = req.params.userId;
+
+    const result = await userServices.deleteUser(paramsUserId!);
+    sendResponse(res, {
+      success: true,
+      message: "User deleted successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      success: false,
+      message: error?.message ? error?.message : "Internal Server Error",
+      data: null,
+    });
+  }
+};
+
 export const userControllers = {
   getUsers,
   updateUser,
+  deleteUser,
 };
