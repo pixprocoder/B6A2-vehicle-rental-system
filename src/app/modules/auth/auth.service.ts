@@ -6,6 +6,15 @@ import jwt from "jsonwebtoken";
 // Create user
 const createUser = async (payload: Record<string, unknown>) => {
   const { name, email, password, phone, role } = payload;
+  console.log(password);
+
+  if (!password || typeof password !== "string") {
+    throw new Error("Password is required");
+  }
+
+  if (password.length < 6) {
+    throw new Error("Password must be at least 6 characters long");
+  }
 
   const hashedPassword = await bcrypt.hash(password as string, 10);
 
