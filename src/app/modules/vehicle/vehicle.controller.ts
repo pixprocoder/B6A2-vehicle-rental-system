@@ -37,7 +37,26 @@ const getVehicles = async (req: Request, res: Response) => {
   }
 };
 
+const getSingleVehicle = async (req: Request, res: Response) => {
+  try {
+    const paramsId = req.params.vehicleId;
+    const result = await vehicleServices.getSingleVehicle(paramsId as string);
+    sendResponse(res, {
+      success: true,
+      message: "Vehicle retrieved successfully",
+      data: result.rows,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      success: false,
+      message: error?.message ? error?.message : "Internal Server Error",
+      data: null,
+    });
+  }
+};
+
 export const vehicleControllers = {
   addVehicle,
   getVehicles,
+  getSingleVehicle,
 };
