@@ -50,7 +50,7 @@ const updateUser = async (
 const deleteUser = async (paramsUserId: string) => {
   const checkActiveBooking = await pool.query(
     `
-    SELECT id FROM bookings WHERE customer_id = $1 AND status = "active"
+    SELECT id FROM bookings WHERE customer_id = $1 AND status = 'active'
     `,
     [paramsUserId]
   );
