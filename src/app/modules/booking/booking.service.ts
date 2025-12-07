@@ -1,6 +1,34 @@
 import { pool } from "../../../config/db";
 
+// autoupdate helper function
+const autoUpdateExpiredBookings = async () => {
+  const result = await pool.query(`
+      UPDATE bookings 
+      SET status = 'returned' 
+      WHERE status = 'active' 
+      AND rent_end_date < CURRENT_DATE
+      RETURNING vehicle_id
+    `);
+
+  // If any bookings were updated, make their vehicles available
+  if (result.rows.length > 0) {
+    const vehicleIds = result.rows.map((row: any) => row.vehicle_id);
+
+    await pool.query(
+      `
+        UPDATE vehicles 
+        SET availability_status = 'available' 
+        WHERE id = ANY($1::int[])
+      `,
+      [vehicleIds]
+    );
+  }
+};
+
+// create booking
 const createBooking = async (currentUser: any, bookingData: any) => {
+  await autoUpdateExpiredBookings();
+
   const { customer_id, vehicle_id, rent_start_date, rent_end_date } =
     bookingData;
 
@@ -88,6 +116,7 @@ const createBooking = async (currentUser: any, bookingData: any) => {
 
 // get bookings
 const getBookings = async (currentUser: any) => {
+  await autoUpdateExpiredBookings();
   await pool.query(`
         UPDATE bookings 
         SET status = 'returned' 
@@ -145,6 +174,8 @@ const updateBooking = async (
   currentUser: any,
   { status }: { status: string }
 ) => {
+  await autoUpdateExpiredBookings();
+
   if (!status) {
     throw new Error("Status is required");
   }
