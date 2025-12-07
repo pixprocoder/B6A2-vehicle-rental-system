@@ -72,6 +72,61 @@ const createBooking = async (currentUser: any, bookingData: any) => {
   };
 };
 
+const getBookings = async (currentUser: any) => {
+  console.log(currentUser);
+  await pool.query(`
+        UPDATE bookings 
+        SET status = 'returned' 
+        WHERE status = 'active' 
+        AND rent_end_date < CURRENT_DATE
+      `);
+
+  let query: string;
+  let values: any[];
+
+  if (currentUser.role === "admin") {
+    query = `
+          SELECT 
+            b.*,
+            json_build_object(
+              'name', u.name,
+              'email', u.email
+            ) as customer,
+            json_build_object(
+              'vehicle_name', v.vehicle_name,
+              'registration_number', v.registration_number
+            ) as vehicle
+          FROM bookings b
+          JOIN users u ON b.customer_id = u.id
+          JOIN vehicles v ON b.vehicle_id = v.id
+        `;
+    values = [];
+  } else {
+    query = `
+          SELECT 
+            b.*,
+            json_build_object(
+              'name', u.name,
+              'email', u.email
+            ) as customer,
+            json_build_object(
+              'vehicle_name', v.vehicle_name,
+              'registration_number', v.registration_number
+            ) as vehicle
+          FROM bookings b
+          JOIN users u ON b.customer_id = u.id
+          JOIN vehicles v ON b.vehicle_id = v.id
+          WHERE b.customer_id = $1
+        `;
+    values = [currentUser.id];
+  }
+
+  const result = await pool.query(query, values);
+  //   console.log(result);
+  return result.rows;
+};
+
 export const bookingServices = {
   createBooking,
+  getBookings,
 };
