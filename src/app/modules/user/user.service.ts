@@ -7,6 +7,45 @@ const getUsers = async () => {
   return result;
 };
 
+const updateUser = async (
+  paramsUserId: string,
+  currentUser: Record<string, undefined>,
+  updateData: Record<string, unknown>
+) => {
+  if (updateData?.name || updateData?.email || updateData?.phone) {
+    await pool.query(
+      `UPDATE users 
+     SET name = COALESCE($1, name),
+         email = COALESCE($2, email),
+         phone = COALESCE($3, phone)
+     WHERE id = $4`,
+      [updateData?.name, updateData?.email, updateData?.phone, paramsUserId]
+    );
+  }
+
+  if (updateData?.role) {
+    if (currentUser?.role !== "admin") {
+      throw new Error("Only admins can change user roles");
+    }
+    await pool.query(`UPDATE users SET role = $1  WHERE id = $2`, [
+      updateData?.role,
+      paramsUserId,
+    ]);
+  }
+
+  const result = await pool.query(
+    `SELECT id, name, email, phone, role FROM users WHERE id = $1`,
+    [paramsUserId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("User not found");
+  }
+
+  return result.rows[0];
+};
+
 export const userServices = {
   getUsers,
+  updateUser,
 };

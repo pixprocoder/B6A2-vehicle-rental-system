@@ -24,7 +24,6 @@ const auth = (...roles: string[]) => {
       ) as JwtPayload;
 
       req.user = decoded;
-      console.log(decoded);
 
       if (roles.length && !roles.includes(decoded.role)) {
         sendResponse(res, {
