@@ -4,8 +4,6 @@ const createBooking = async (currentUser: any, bookingData: any) => {
   const { customer_id, vehicle_id, rent_start_date, rent_end_date } =
     bookingData;
 
-  console.log(bookingData);
-
   if (!customer_id || !vehicle_id || !rent_start_date || !rent_end_date) {
     throw new Error("All fields are required");
   }
@@ -23,6 +21,22 @@ const createBooking = async (currentUser: any, bookingData: any) => {
 
   if (vehicleCheck.rows.length === 0) {
     throw new Error("Vehicle not found");
+  }
+
+  const conflictCheck = await pool.query(
+    `SELECT id FROM bookings 
+     WHERE vehicle_id = $1 
+     AND status = 'active'
+     AND (
+       (rent_start_date <= $2 AND rent_end_date >= $2) OR
+       (rent_start_date <= $3 AND rent_end_date >= $3) OR
+       (rent_start_date >= $2 AND rent_end_date <= $3)
+     )`,
+    [vehicle_id, rent_start_date, rent_end_date]
+  );
+
+  if (conflictCheck.rows.length > 0) {
+    throw new Error("Vehicle is already booked for the selected dates");
   }
 
   const vehicle = vehicleCheck.rows[0];
@@ -72,8 +86,8 @@ const createBooking = async (currentUser: any, bookingData: any) => {
   };
 };
 
+// get bookings
 const getBookings = async (currentUser: any) => {
-  console.log(currentUser);
   await pool.query(`
         UPDATE bookings 
         SET status = 'returned' 
@@ -122,11 +136,97 @@ const getBookings = async (currentUser: any) => {
   }
 
   const result = await pool.query(query, values);
-  //   console.log(result);
   return result.rows;
+};
+
+// update booking
+const updateBooking = async (
+  bookingId: string,
+  currentUser: any,
+  { status }: { status: string }
+) => {
+  if (!status) {
+    throw new Error("Status is required");
+  }
+
+  if (!["cancelled", "returned"].includes(status)) {
+    throw new Error("Invalid status. Only 'cancelled' or 'returned' allowed");
+  }
+
+  // Get booking details
+  const bookingCheck = await pool.query(
+    `SELECT * FROM bookings WHERE id = $1`,
+    [bookingId]
+  );
+
+  if (bookingCheck.rows.length === 0) {
+    throw new Error("Booking not found");
+  }
+
+  const booking = bookingCheck.rows[0];
+
+  // Check if booking is already completed
+  if (booking.status === "cancelled" || booking.status === "returned") {
+    throw new Error(`Booking is already ${booking.status}`);
+  }
+
+  // role base actions logic
+  if (status === "cancelled") {
+    if (
+      currentUser.role === "customer" &&
+      currentUser.id !== booking.customer_id
+    ) {
+      throw new Error("You can only cancel your own bookings");
+    }
+  }
+
+  if (status === "returned") {
+    if (currentUser.role !== "admin") {
+      throw new Error("Only admins can mark bookings as returned");
+    }
+  }
+
+  // Update booking status
+  const result = await pool.query(
+    `UPDATE bookings 
+       SET status = $1
+       WHERE id = $2 
+       RETURNING *`,
+    [status, bookingId]
+  );
+
+  // update vehicle availability
+  if (status === "returned") {
+    await pool.query(
+      `UPDATE vehicles 
+         SET availability_status = 'available' 
+         WHERE id = $1`,
+      [booking.vehicle_id]
+    );
+
+    return {
+      ...result.rows[0],
+      vehicle: {
+        availability_status: "available",
+      },
+    };
+  }
+
+  // If status is 'cancelled', also update vehicle availability to 'available'
+  if (status === "cancelled") {
+    await pool.query(
+      `UPDATE vehicles 
+         SET availability_status = 'available' 
+         WHERE id = $1`,
+      [booking.vehicle_id]
+    );
+  }
+
+  return result.rows[0];
 };
 
 export const bookingServices = {
   createBooking,
   getBookings,
+  updateBooking,
 };

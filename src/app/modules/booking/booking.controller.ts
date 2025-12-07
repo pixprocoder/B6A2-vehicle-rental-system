@@ -46,7 +46,34 @@ const getBookings = async (req: Request, res: Response) => {
   }
 };
 
+const updateBooking = async (req: Request, res: Response) => {
+  try {
+    const bookingId = req.params.bookingId;
+    const currentUser = req.user;
+    const status = req.body;
+
+    const result = await bookingServices.updateBooking(
+      bookingId!,
+      currentUser,
+      status
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Booking cancelled successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      success: false,
+      message: error.message,
+      data: null,
+    });
+  }
+};
+
 export const bookingControllers = {
   createBooking,
   getBookings,
+  updateBooking,
 };
