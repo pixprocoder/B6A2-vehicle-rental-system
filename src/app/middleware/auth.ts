@@ -17,7 +17,6 @@ const auth = (...roles: string[]) => {
       }
 
       const token = authHeader.split(" ")[1];
-      console.log(token);
 
       const decoded = jwt.verify(
         token as string,
@@ -25,6 +24,7 @@ const auth = (...roles: string[]) => {
       ) as JwtPayload;
 
       req.user = decoded;
+      console.log(decoded);
 
       if (roles.length && !roles.includes(decoded.role)) {
         sendResponse(res, {
