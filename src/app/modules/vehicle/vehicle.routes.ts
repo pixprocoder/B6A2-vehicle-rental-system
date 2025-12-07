@@ -8,5 +8,6 @@ const router = express.Router();
 router.post("/", auth(ROLE.ADMIN), vehicleControllers.addVehicle);
 router.get("/", vehicleControllers.getVehicles);
 router.get("/:vehicleId", vehicleControllers.getSingleVehicle);
+router.put("/:vehicleId", auth("admin"), vehicleControllers.updateVehicle);
 
 export const vehicleRoutes = router;

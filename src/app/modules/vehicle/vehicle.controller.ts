@@ -55,8 +55,29 @@ const getSingleVehicle = async (req: Request, res: Response) => {
   }
 };
 
+const updateVehicle = async (req: Request, res: Response) => {
+  try {
+    const vehicleId = req.params.vehicleId;
+    const updateData = req.body;
+
+    const result = await vehicleServices.updateVehicle(vehicleId!, updateData);
+    sendResponse(res, {
+      success: true,
+      message: "Vehicle updated successfully",
+      data: result,
+    });
+  } catch (error: any) {
+    sendResponse(res, {
+      success: false,
+      message: error?.message ? error?.message : "Internal Server Error",
+      data: null,
+    });
+  }
+};
+
 export const vehicleControllers = {
   addVehicle,
   getVehicles,
   getSingleVehicle,
+  updateVehicle,
 };
