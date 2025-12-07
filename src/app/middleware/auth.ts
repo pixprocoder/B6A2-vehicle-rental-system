@@ -6,9 +6,9 @@ import sendResponse from "../helpers/sendResponse";
 const auth = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      const token = req.headers.authorization;
+      const authHeader = req.headers.authorization as string;
 
-      if (!token) {
+      if (!authHeader) {
         sendResponse(res, {
           success: false,
           message: "Token not found",
@@ -16,12 +16,13 @@ const auth = (...roles: string[]) => {
         });
       }
 
+      const token = authHeader.split(" ")[1];
+      console.log(token);
+
       const decoded = jwt.verify(
         token as string,
         config.jwt_secret as string
       ) as JwtPayload;
-
-      console.log(decoded);
 
       req.user = decoded;
 
